@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Feedback & Reviews | Catalyst{% endblock %}
+{% block description %}Share your Catalyst experience and read feedback from the community.{% endblock %}
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/feedback.css') }}">
+{% endblock %}
+
+{% block content %}
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="app dashboard-app feedback-app">
+    {% include "_sidebar.html" %}
+
+    <main class="main feedback-main" id="main">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flash-list overview-flashes" role="status">
+                    {% for category, message in messages %}
+                        <li class="flash flash-{{ 'error' if category in ('error', 'danger') else category }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
+        <div class="overview-page feedback-page">
+            <header class="feedback-topbar">
+                <span class="feedback-top-label">CATALYST COMMUNITY</span>
+                <a class="feedback-back-link" href="{{ url_for('dashboard') }}">
+                    <span aria-hidden="true">←</span> Back to Dashboard
+                </a>
+            </header>
+
+            <section class="feedback-hero" aria-labelledby="feedback-title">
+                <div class="feedback-hero-copy">
+                    <p class="feedback-eyebrow"><span aria-hidden="true">✦</span> YOUR VOICE MOVES US FORWARD</p>
+                    <h1 id="feedback-title">Feedback <span>&amp;</span> Reviews</h1>
+                    <p>Share your experience and help improve Catalyst.</p>
+                </div>
+                <div class="feedback-hero-mark" aria-hidden="true">
+                    <span class="feedback-orbit feedback-orbit-one"></span>
+                    <span class="feedback-orbit feedback-orbit-two"></span>
+                    <span class="feedback-mark-star">✦</span>
+                </div>
+            </section>
+
+            <div class="feedback-layout">
+                <section class="feedback-form-card" aria-labelledby="feedback-form-title">
+                    <div class="feedback-card-heading">
+                        <span class="feedback-card-icon" aria-hidden="true">✎</span>
+                        <div>
+                            <p class="feedback-eyebrow">WE’RE LISTENING</p>
+                            <h2 id="feedback-form-title">Tell us what you think</h2>
+                            <p>Your honest feedback helps us make Catalyst better for everyone.</p>
+                        </div>
+                    </div>
+
+                    <form class="feedback-form" method="POST" action="{{ url_for('submit_feedback') }}">
+                        <fieldset class="feedback-rating-field">
+                            <legend>Your rating <span aria-hidden="true">*</span></legend>
+                            <div class="feedback-stars" role="radiogroup" aria-label="Your rating, 1 to 5 stars">
+                                {% for value in range(1, 6) %}
+                                    <label class="feedback-rating-option" for="feedback-rating-{{ value }}">
+                                        <input id="feedback-rating-{{ value }}" name="rating" type="radio" value="{{ value }}" required>
+                                        <span aria-hidden="true">★</span>
+                                        <span class="visually-hidden">{{ value }} {{ "star" if value == 1 else "stars" }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                            <p class="feedback-rating-hint" data-rating-hint>Choose a rating from 1 to 5.</p>
+                        </fieldset>
+
+                        <div class="feedback-field">
+                            <label for="feedback-category">Category <span aria-hidden="true">*</span></label>
+                            <select id="feedback-category" name="category" required>
+                                <option value="" disabled selected>Select a category</option>
+                                <option value="Bug Report">Bug Report</option>
+                                <option value="Feature Request">Feature Request</option>
+                                <option value="UI/UX">UI/UX</option>
+                                <option value="General Feedback">General Feedback</option>
+                            </select>
+                        </div>
+
+                        <div class="feedback-field">
+                            <label for="feedback-message">Your feedback <span aria-hidden="true">*</span></label>
+                            <textarea id="feedback-message" name="message" rows="6" minlength="10" maxlength="1000" placeholder="What’s working well? What could be even better?" required></textarea>
+                            <div class="feedback-message-meta">
+                                <span>At least 10 characters</span>
+                                <span><span data-message-count>0</span>/1000</span>
+                            </div>
+                        </div>
+
+                        <button class="feedback-submit" type="submit">
+                            Submit Feedback <span aria-hidden="true">↗</span>
+                        </button>
+                        <p class="feedback-form-note"><span aria-hidden="true">⌑</span> Your feedback is shared with the Catalyst community.</p>
+                    </form>
+                </section>
+
+                <section class="feedback-reviews" aria-labelledby="reviews-title">
+                    <header class="feedback-reviews-heading">
+                        <div>
+                            <p class="feedback-eyebrow">THE COMMUNITY</p>
+                            <h2 id="reviews-title">Community Reviews</h2>
+                            <p>Real thoughts from students using Catalyst.</p>
+                        </div>
+                        <span class="feedback-review-count" aria-label="{{ feedback_list|length }} reviews">{{ feedback_list|length }}</span>
+                    </header>
+
+                    {% if feedback_list %}
+                        <div class="feedback-review-list">
+                            {% for review in feedback_list %}
+                                <article class="feedback-review-card">
+                                    <header class="feedback-review-top">
+                                        <div class="feedback-review-author">
+                                            <span class="feedback-avatar" aria-hidden="true">{{ review.username[:1]|upper }}</span>
+                                            <div>
+                                                <h3>{{ review.username }}</h3>
+                                                <time datetime="{{ review.created_at }}">{{ review.created_at[:10] }}</time>
+                                            </div>
+                                        </div>
+                                        <span class="feedback-category">{{ review.category }}</span>
+                                    </header>
+                                    <div class="feedback-review-stars" aria-label="{{ review.rating }} out of 5 stars">
+                                        {% for value in range(1, 6) %}
+                                            <span class="{{ 'is-filled' if value <= review.rating }}" aria-hidden="true">★</span>
+                                        {% endfor %}
+                                    </div>
+                                    <p class="feedback-review-message">{{ review.message }}</p>
+                                </article>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="feedback-empty-state">
+                            <span class="feedback-empty-icon" aria-hidden="true">✦</span>
+                            <h3>Be the first to share</h3>
+                            <p>Your perspective can help shape a better study space for everyone.</p>
+                            <a href="#feedback-form-title">Leave the first review <span aria-hidden="true">↑</span></a>
+                        </div>
+                    {% endif %}
+                </section>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    (function () {
+        var sidebar = document.getElementById("sidebar");
+        var toggle = sidebar && sidebar.querySelector(".menu-toggle");
+        if (toggle) {
+            toggle.addEventListener("click", function () {
+                toggle.setAttribute("aria-expanded", sidebar.classList.toggle("open"));
+            });
+        }
+
+        var ratingInputs = document.querySelectorAll(".feedback-rating-option input");
+        var ratingHint = document.querySelector("[data-rating-hint]");
+        ratingInputs.forEach(function (input) {
+            input.addEventListener("change", function () {
+                var rating = Number(input.value);
+                document.querySelectorAll(".feedback-rating-option").forEach(function (option) {
+                    option.classList.toggle("is-selected", Number(option.querySelector("input").value) <= rating);
+                });
+                ratingHint.textContent = rating + (rating === 1 ? " star — thanks for rating." : " stars — thanks for rating.");
+            });
+        });
+
+        var message = document.getElementById("feedback-message");
+        var messageCount = document.querySelector("[data-message-count]");
+        message.addEventListener("input", function () {
+            messageCount.textContent = String(message.value.length);
+        });
+    })();
+</script>
+{% endblock %}

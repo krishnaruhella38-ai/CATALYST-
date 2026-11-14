@@ -1,0 +1,199 @@
+{% extends "app_layout.html" %}
+
+{% block title %}Overview | Catalyst{% endblock %}
+{% block description %}See your study progress, tasks, assignments and goals.{% endblock %}
+
+{% block page %}
+{% set total = tasks|length %}
+{% set done = tasks|selectattr("status", "equalto", "Completed")|list|length %}
+{% set pending = tasks|selectattr("status", "equalto", "Pending")|list %}
+{% set completed_assignments = assignments|selectattr("status", "equalto", "Completed")|list|length %}
+{% set active_goals = goals|rejectattr("achieved")|list|length %}
+{% set pct = ((done * 100 / total)|round|int) if total else 0 %}
+
+<div class="overview-page">
+    <header class="overview-topbar">
+        <nav class="overview-tabs" aria-label="Dashboard sections">
+            <a class="selected" href="{{ url_for('dashboard') }}">Overview</a>
+            <a href="{{ url_for('tasks_page') }}">Tasks</a>
+            <a href="{{ url_for('assignments_page') }}">Assignments</a>
+            <a href="{{ url_for('goals_page') }}">Goals</a>
+        </nav>
+        <a class="overview-add-button" href="{{ url_for('tasks_page') }}">＋ <span>Add task</span></a>
+    </header>
+
+    <header class="overview-heading">
+        <div>
+            <p class="overview-eyebrow">{{ today.strftime("%A, %B %d") }}</p>
+            <h1>Welcome back, {{ session.get("username", "Student") }}</h1>
+            <p class="overview-subtitle">A little progress each day adds up.</p>
+        </div>
+        <a class="overview-profile" href="{{ url_for('goals_page') }}" aria-label="View your goals">{{ session.get("username", "Student")[:2]|upper }}</a>
+    </header>
+
+    {% set messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <ul class="flash-list overview-flashes" role="status">
+            {% for category, message in messages %}
+                <li class="flash flash-{{ 'error' if category in ('error', 'danger') else category }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <div class="overview-grid">
+        <div class="overview-primary">
+            <section class="overview-progress-card">
+                <div class="overview-card-heading">
+                    <div>
+                        <p class="overview-eyebrow">YOUR PROGRESS</p>
+                        <h2>Tasks completed</h2>
+                    </div>
+                    <span class="overview-progress-number">{{ pct }}<small>%</small></span>
+                </div>
+                <div class="overview-progress-track" role="progressbar" aria-label="Tasks completed" aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100">
+                    <span style="--progress: {{ pct }}%"></span>
+                </div>
+                <div class="overview-progress-footer">
+                    <span>{{ done }} of {{ total }} tasks complete</span>
+                    <a href="{{ url_for('tasks_page') }}">View tasks <span aria-hidden="true">→</span></a>
+                </div>
+            </section>
+
+            <section class="overview-stat-grid" aria-label="Workspace summary">
+                <a class="overview-stat-card stat-violet" href="{{ url_for('tasks_page') }}">
+                    <span class="overview-stat-icon" aria-hidden="true">✓</span>
+                    <span class="overview-stat-label">Tasks left</span>
+                    <strong>{{ pending|length }}</strong>
+                    <span class="overview-stat-note">of {{ total }} total</span>
+                </a>
+                <a class="overview-stat-card stat-blue" href="{{ url_for('assignments_page') }}">
+                    <span class="overview-stat-icon" aria-hidden="true">▤</span>
+                    <span class="overview-stat-label">Assignments</span>
+                    <strong>{{ assignments|length - completed_assignments }}</strong>
+                    <span class="overview-stat-note">still to finish</span>
+                </a>
+                <a class="overview-stat-card stat-pink" href="{{ url_for('goals_page') }}">
+                    <span class="overview-stat-icon" aria-hidden="true">◎</span>
+                    <span class="overview-stat-label">Active goals</span>
+                    <strong>{{ active_goals }}</strong>
+                    <span class="overview-stat-note">keep going</span>
+                </a>
+            </section>
+
+            <section class="overview-panel overview-week">
+                <div class="overview-section-heading">
+                    <div>
+                        <p class="overview-eyebrow">THIS WEEK</p>
+                        <h2>Upcoming workload</h2>
+                    </div>
+                    <span class="overview-muted">Deadlines by day</span>
+                </div>
+                <div class="workload-chart" aria-label="Upcoming task and assignment deadlines this week">
+                    {% for day in weekly_deadlines %}
+                        <div class="workload-day {{ 'workload-today' if day.is_today }}">
+                            <span class="workload-count">{{ day.count if day.count else '' }}</span>
+                            <div class="workload-track">
+                                <span style="--bar-height: {{ 12 + day.count * 22 }}px"></span>
+                            </div>
+                            <span class="workload-label">{{ day.label }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+                <p class="overview-chart-caption">Based on due dates saved in your tasks and assignments.</p>
+            </section>
+
+            <section class="overview-panel overview-up-next">
+                <div class="overview-section-heading">
+                    <div>
+                        <p class="overview-eyebrow">STAY ON TRACK</p>
+                        <h2>Coming up next</h2>
+                    </div>
+                    <a class="overview-text-link" href="{{ url_for('assignments_page') }}">See assignments →</a>
+                </div>
+                <div class="overview-upcoming-list">
+                    {% for item in upcoming %}
+                        <article class="overview-upcoming-item">
+                            <span class="upcoming-marker {{ 'marker-assignment' if item.kind == 'Assignment' }}" aria-hidden="true"></span>
+                            <div>
+                                <h3>{{ item.title }}</h3>
+                                <p>{{ item.kind }}{% if item.subject %} · {{ item.subject }}{% endif %}</p>
+                            </div>
+                            <time datetime="{{ item.deadline.isoformat() }}">{{ item.deadline.strftime("%b %d") }}</time>
+                        </article>
+                    {% else %}
+                        <p class="overview-empty">No upcoming deadlines. Add a task or assignment to see it here.</p>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+
+        <aside class="overview-aside">
+            <section class="overview-panel overview-calendar">
+                <div class="overview-section-heading">
+                    <div>
+                        <p class="overview-eyebrow">YOUR SCHEDULE</p>
+                        <h2>{{ month_label }}</h2>
+                    </div>
+                    <span class="calendar-mark" aria-hidden="true">▦</span>
+                </div>
+                <div class="calendar-grid" role="grid" aria-label="{{ month_label }}">
+                    {% for weekday in ["S", "M", "T", "W", "T", "F", "S"] %}
+                        <span class="calendar-weekday" role="columnheader">{{ weekday }}</span>
+                    {% endfor %}
+                    {% for week in month_days %}
+                        {% for day in week %}
+                            <span class="calendar-day {{ 'calendar-outside' if not day.in_month }} {{ 'calendar-today' if day.is_today }} {{ 'calendar-has-deadline' if day.has_deadline }}"
+                                  role="gridcell"
+                                  {% if day.is_today %}aria-current="date"{% endif %}
+                                  aria-label="{{ day.date.strftime('%B %d') }}{% if day.has_deadline %}, has a deadline{% endif %}">
+                                {{ day.date.day }}
+                            </span>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+                <div class="calendar-legend"><span></span> Deadline</div>
+            </section>
+
+            <section class="overview-panel overview-quick">
+                <div class="overview-section-heading">
+                    <div>
+                        <p class="overview-eyebrow">JUMP RIGHT IN</p>
+                        <h2>Quick actions</h2>
+                    </div>
+                </div>
+                <a class="quick-action" href="{{ url_for('tasks_page') }}"><span class="quick-action-icon">＋</span><span><strong>Plan a task</strong><small>Add something to your list</small></span><b aria-hidden="true">→</b></a>
+                <a class="quick-action" href="{{ url_for('assignments_page') }}"><span class="quick-action-icon quick-blue">▤</span><span><strong>Track assignment</strong><small>Keep a deadline in sight</small></span><b aria-hidden="true">→</b></a>
+                <a class="quick-action" href="{{ url_for('goals_page') }}"><span class="quick-action-icon quick-pink">◎</span><span><strong>Set a goal</strong><small>Make progress on the big picture</small></span><b aria-hidden="true">→</b></a>
+            </section>
+
+            <section class="overview-panel overview-goals">
+                <div class="overview-section-heading">
+                    <div>
+                        <p class="overview-eyebrow">YOUR BIG PICTURE</p>
+                        <h2>Active goals</h2>
+                    </div>
+                    <a class="overview-text-link" href="{{ url_for('goals_page') }}">View all →</a>
+                </div>
+                <div class="overview-goal-list">
+                    {% for goal in goals if not goal.achieved %}
+                        <div class="overview-goal-item">
+                            <span class="goal-bullet" aria-hidden="true"></span>
+                            <div>
+                                <strong>{{ goal.title }}</strong>
+                                {% if goal.deadline %}<small>Due {{ goal.deadline }}</small>{% endif %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <p class="overview-empty">No active goals yet. Set one to keep your bigger plans in sight.</p>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="overview-goal-note">
+                <span aria-hidden="true">✦</span>
+                <div><strong>Keep your momentum</strong><p>You have {{ active_goals }} active {{ "goal" if active_goals == 1 else "goals" }} to work toward.</p></div>
+            </section>
+        </aside>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,154 @@
+<div class="overview-page work-page">
+    <header class="overview-topbar">
+        <nav class="overview-tabs" aria-label="Dashboard sections">
+            <a href="{{ url_for('dashboard') }}">Overview</a>
+            <a class="{{ 'selected' if request.endpoint == 'tasks_page' }}" href="{{ url_for('tasks_page') }}">Tasks</a>
+            <a class="{{ 'selected' if request.endpoint == 'assignments_page' }}" href="{{ url_for('assignments_page') }}">Assignments</a>
+            <a href="{{ url_for('goals_page') }}">Goals</a>
+        </nav>
+        <a class="overview-add-button" href="#create-item" aria-label="Add {{ noun }}">＋ <span>Add {{ noun }}</span></a>
+    </header>
+
+    <header class="overview-heading">
+        <div>
+            <p class="overview-eyebrow">{{ "YOUR DAILY PLAN" if noun == "task" else "DEADLINES & SUBMISSIONS" }}</p>
+            <h1>{{ heading }}</h1>
+            <p class="overview-subtitle">{{ intro }}</p>
+        </div>
+        <a class="overview-profile" href="{{ url_for('goals_page') }}" aria-label="View your goals">{{ session.get("username", "Student")[:2]|upper }}</a>
+    </header>
+
+    {% set completed = items|selectattr("status", "equalto", "Completed")|list|length %}
+    <section class="overview-stat-grid work-stats" aria-label="{{ heading }} summary">
+        <article class="overview-stat-card stat-violet">
+            <span class="overview-stat-icon" aria-hidden="true">{{ "✓" if noun == "task" else "▤" }}</span>
+            <span class="overview-stat-label">Total {{ noun_plural }}</span>
+            <strong>{{ items|length }}</strong>
+            <span class="overview-stat-note">in your workspace</span>
+        </article>
+        <article class="overview-stat-card stat-blue">
+            <span class="overview-stat-icon" aria-hidden="true">◷</span>
+            <span class="overview-stat-label">In progress</span>
+            <strong>{{ items|length - completed }}</strong>
+            <span class="overview-stat-note">ready for your next step</span>
+        </article>
+        <article class="overview-stat-card stat-pink">
+            <span class="overview-stat-icon" aria-hidden="true">✓</span>
+            <span class="overview-stat-label">Completed</span>
+            <strong>{{ completed }}</strong>
+            <span class="overview-stat-note">nice work</span>
+        </article>
+    </section>
+
+    <div class="work-layout">
+        <form class="form-card work-form" id="create-item" method="POST" action="{{ url_for(add_ep) }}">
+            <p class="overview-eyebrow">MAKE A PLAN</p>
+            <h2>Add {{ noun }}</h2>
+            <label for="f-title">Title</label>
+            <input id="f-title" name="title" type="text" maxlength="100" placeholder="{{ ph_title }}" required>
+            <label for="f-subject">Subject</label>
+            <input id="f-subject" name="subject" type="text" maxlength="60" placeholder="e.g. Physics" required>
+            <label for="f-deadline">Deadline</label>
+            <input id="f-deadline" name="deadline" type="date">
+            <label for="f-priority">Priority</label>
+            <select id="f-priority" name="priority" required>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+                <option value="Low">Low</option>
+            </select>
+            <button class="primary-btn" type="submit">Add {{ noun }}</button>
+        </form>
+
+        <section class="work-list-panel" aria-label="{{ heading }}">
+            <div class="work-list-heading">
+                <div>
+                    <p class="overview-eyebrow">YOUR WORKSPACE</p>
+                    <h2>{{ heading }} list <span class="work-result-count" data-result-count>{{ items|length }}</span></h2>
+                </div>
+                <span class="overview-muted">Stay one step ahead</span>
+            </div>
+            <div class="work-filters">
+                <label class="work-search">
+                    <span class="visually-hidden">Search {{ noun_plural }}</span>
+                    <span aria-hidden="true">⌕</span>
+                    <input type="search" placeholder="Search {{ noun_plural|lower }}..." data-work-search>
+                </label>
+                <label class="visually-hidden" for="work-status-filter">Filter by status</label>
+                <select id="work-status-filter" data-work-status>
+                    <option value="all">All statuses</option>
+                    <option value="pending">In progress</option>
+                    <option value="completed">Completed</option>
+                </select>
+                <label class="visually-hidden" for="work-priority-filter">Filter by priority</label>
+                <select id="work-priority-filter" data-work-priority>
+                    <option value="all">All priorities</option>
+                    <option value="high">High priority</option>
+                    <option value="medium">Medium priority</option>
+                    <option value="low">Low priority</option>
+                </select>
+            </div>
+            <div class="item-list work-item-list">
+                {% for item in items %}
+                    {% set is_overdue = item.deadline and item.deadline < today.isoformat() and item.status != "Completed" %}
+                    <article class="item-card work-item-card {{ 'is-done' if item.status == 'Completed' }}"
+                             data-work-item
+                             data-status="{{ 'completed' if item.status == 'Completed' else 'pending' }}"
+                             data-priority="{{ (item.priority or 'medium')|lower }}"
+                             data-search="{{ item.title }} {{ item.subject or '' }}">
+                        <div class="item-heading">
+                            <div>
+                                <h3>{{ item.title }}</h3>
+                                <p>{{ item.subject or "No subject" }}</p>
+                                {% if item.deadline %}
+                                    <p class="work-deadline {{ 'deadline-overdue' if is_overdue }}">
+                                        <span aria-hidden="true">◷</span>
+                                        {% if is_overdue %}Overdue · {% else %}Due {% endif %}{{ item.deadline }}
+                                    </p>
+                                {% else %}
+                                    <p class="work-deadline">No deadline set</p>
+                                {% endif %}
+                            </div>
+                            <div class="chips">
+                                <span class="chip chip-{{ (item.priority or 'medium')|lower }}">{{ item.priority or "Medium" }} priority</span>
+                                <span class="chip {{ 'chip-done' if item.status == 'Completed' }}">{{ item.status }}</span>
+                            </div>
+                        </div>
+                        <div class="item-actions">
+                            {% if item.status != "Completed" %}
+                                <form method="POST" action="{{ url_for(complete_ep, **{id_key: item.id}) }}">
+                                    <button class="secondary-btn" type="submit">Mark complete</button>
+                                </form>
+                            {% endif %}
+                            <details class="work-edit">
+                                <summary class="secondary-btn">Edit</summary>
+                                <form class="work-edit-form" method="POST" action="{{ url_for(edit_ep, **{id_key: item.id}) }}">
+                                    <label for="edit-title-{{ item.id }}">Title</label>
+                                    <input id="edit-title-{{ item.id }}" name="title" type="text" maxlength="100" value="{{ item.title }}" required>
+                                    <label for="edit-subject-{{ item.id }}">Subject</label>
+                                    <input id="edit-subject-{{ item.id }}" name="subject" type="text" maxlength="60" value="{{ item.subject or '' }}" required>
+                                    <label for="edit-deadline-{{ item.id }}">Deadline</label>
+                                    <input id="edit-deadline-{{ item.id }}" name="deadline" type="date" value="{{ item.deadline }}">
+                                    <label for="edit-priority-{{ item.id }}">Priority</label>
+                                    <select id="edit-priority-{{ item.id }}" name="priority" required>
+                                        {% for priority in ["Medium", "High", "Low"] %}
+                                            <option value="{{ priority }}" {{ "selected" if item.priority == priority }}>{{ priority }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button class="secondary-btn" type="submit">Save changes</button>
+                                </form>
+                            </details>
+                            <form method="POST" action="{{ url_for(delete_ep, **{id_key: item.id}) }}" data-confirm="Delete this {{ noun }}?">
+                                <button class="secondary-btn danger" type="submit">Delete</button>
+                            </form>
+                        </div>
+                    </article>
+                {% else %}
+                    <p class="empty-state work-empty">No {{ noun_plural }} yet. Add your first one to get started.</p>
+                {% endfor %}
+                {% if items %}
+                    <p class="empty-state work-empty work-no-matches" data-no-matches hidden>No {{ noun_plural }} match those filters.</p>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+</div>

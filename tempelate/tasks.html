@@ -1,0 +1,13 @@
+{% extends "app_layout.html" %}
+{% block title %}Tasks | Catalyst{% endblock %}
+{% block description %}Add, complete and manage your study tasks in Catalyst.{% endblock %}
+{% block page %}
+    {% set heading = "Tasks" %}
+    {% set intro = "Small steps that keep your week moving." %}
+    {% set noun = "task" %}
+    {% set noun_plural = "tasks" %}
+    {% set ph_title = "e.g. Revise chapter 4" %}
+    {% set items = tasks %}
+    {% set add_ep = "add_task" %}{% set complete_ep = "complete_task" %}{% set edit_ep = "edit_task" %}{% set delete_ep = "delete_task" %}{% set id_key = "task_id" %}
+    {% include "_work_page.html" %}
+{% endblock %}

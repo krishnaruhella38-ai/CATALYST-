@@ -1,0 +1,134 @@
+{% extends "app_layout.html" %}
+{% block title %}Goals | Catalyst{% endblock %}
+{% block description %}Set and track your academic goals in Catalyst.{% endblock %}
+{% block page %}
+<div class="overview-page work-page goals-page">
+    <header class="overview-topbar">
+        <nav class="overview-tabs" aria-label="Dashboard sections">
+            <a href="{{ url_for('dashboard') }}">Overview</a>
+            <a href="{{ url_for('tasks_page') }}">Tasks</a>
+            <a href="{{ url_for('assignments_page') }}">Assignments</a>
+            <a class="selected" href="{{ url_for('goals_page') }}">Goals</a>
+        </nav>
+        <a class="overview-add-button" href="#create-goal" aria-label="Add goal">＋ <span>Add goal</span></a>
+    </header>
+
+    <header class="overview-heading">
+        <div>
+            <p class="overview-eyebrow">YOUR BIG PICTURE</p>
+            <h1>Goals</h1>
+            <p class="overview-subtitle">The bigger targets behind your daily work.</p>
+        </div>
+        <a class="overview-profile" href="{{ url_for('dashboard') }}" aria-label="Back to overview">{{ session.get("username", "Student")[:2]|upper }}</a>
+    </header>
+
+    {% set achieved = goals|selectattr("achieved")|list|length %}
+    <section class="overview-stat-grid work-stats" aria-label="Goals summary">
+        <article class="overview-stat-card stat-violet">
+            <span class="overview-stat-icon" aria-hidden="true">◎</span>
+            <span class="overview-stat-label">Total goals</span>
+            <strong>{{ goals|length }}</strong>
+            <span class="overview-stat-note">your bigger picture</span>
+        </article>
+        <article class="overview-stat-card stat-blue">
+            <span class="overview-stat-icon" aria-hidden="true">◷</span>
+            <span class="overview-stat-label">In progress</span>
+            <strong>{{ goals|length - achieved }}</strong>
+            <span class="overview-stat-note">keep the momentum</span>
+        </article>
+        <article class="overview-stat-card stat-pink">
+            <span class="overview-stat-icon" aria-hidden="true">✓</span>
+            <span class="overview-stat-label">Achieved</span>
+            <strong>{{ achieved }}</strong>
+            <span class="overview-stat-note">milestones reached</span>
+        </article>
+    </section>
+
+    <div class="work-layout">
+        <form class="form-card work-form" id="create-goal" method="POST" action="{{ url_for('add_goal') }}">
+            <p class="overview-eyebrow">THINK BIG</p>
+            <h2>Add a goal</h2>
+            <label for="goal-title">Title</label>
+            <input id="goal-title" name="title" type="text" maxlength="100" placeholder="e.g. Finish the semester with a 3.5 GPA" required>
+            <label for="goal-description">Description</label>
+            <textarea id="goal-description" name="description" rows="3" maxlength="300" placeholder="Optional: what will it take?"></textarea>
+            <label for="goal-deadline">Target date</label>
+            <input id="goal-deadline" name="deadline" type="date">
+            <button class="primary-btn" type="submit">Add goal</button>
+        </form>
+
+        <section class="work-list-panel" aria-label="Your goals">
+            <div class="work-list-heading">
+                <div>
+                    <p class="overview-eyebrow">ONE STEP AT A TIME</p>
+                    <h2>Your goals <span class="work-result-count" data-result-count>{{ goals|length }}</span></h2>
+                </div>
+                <span class="overview-muted">Celebrate every milestone</span>
+            </div>
+            <div class="work-filters goal-filters">
+                <label class="work-search">
+                    <span class="visually-hidden">Search goals</span>
+                    <span aria-hidden="true">⌕</span>
+                    <input type="search" placeholder="Search goals..." data-work-search>
+                </label>
+                <label class="visually-hidden" for="goal-status-filter">Filter goals by status</label>
+                <select id="goal-status-filter" data-work-status>
+                    <option value="all">All goals</option>
+                    <option value="pending">In progress</option>
+                    <option value="completed">Achieved</option>
+                </select>
+            </div>
+            <div class="item-list work-item-list">
+                {% for goal in goals %}
+                    {% set is_overdue = goal.deadline and goal.deadline < today.isoformat() and not goal.achieved %}
+                    <article class="item-card work-item-card goal-card {{ 'is-done' if goal.achieved }}"
+                             data-work-item
+                             data-status="{{ 'completed' if goal.achieved else 'pending' }}"
+                             data-search="{{ goal.title }} {{ goal.description or '' }}">
+                        <div class="item-heading">
+                            <div>
+                                <h3>{{ goal.title }}</h3>
+                                {% if goal.description %}<p>{{ goal.description }}</p>{% else %}<p class="work-deadline">No description yet</p>{% endif %}
+                                {% if goal.deadline %}
+                                    <p class="work-deadline {{ 'deadline-overdue' if is_overdue }}">
+                                        <span aria-hidden="true">◷</span>
+                                        {% if is_overdue %}Past target date · {% else %}Target date · {% endif %}{{ goal.deadline }}
+                                    </p>
+                                {% endif %}
+                            </div>
+                            <div class="chips"><span class="chip {{ 'chip-done' if goal.achieved }}">{{ "Achieved" if goal.achieved else "In progress" }}</span></div>
+                        </div>
+                        <div class="item-actions">
+                            {% if not goal.achieved %}
+                                <form method="POST" action="{{ url_for('complete_goal', goal_id=goal.id) }}">
+                                    <button class="secondary-btn" type="submit">Mark achieved</button>
+                                </form>
+                            {% endif %}
+                            <details class="work-edit">
+                                <summary class="secondary-btn">Edit</summary>
+                                <form class="work-edit-form" method="POST" action="{{ url_for('edit_goal', goal_id=goal.id) }}">
+                                    <label for="edit-goal-title-{{ goal.id }}">Title</label>
+                                    <input id="edit-goal-title-{{ goal.id }}" name="title" type="text" maxlength="100" value="{{ goal.title }}" required>
+                                    <label for="edit-goal-description-{{ goal.id }}">Description</label>
+                                    <textarea id="edit-goal-description-{{ goal.id }}" name="description" rows="3" maxlength="300">{{ goal.description or "" }}</textarea>
+                                    <label for="edit-goal-deadline-{{ goal.id }}">Target date</label>
+                                    <input id="edit-goal-deadline-{{ goal.id }}" name="deadline" type="date" value="{{ goal.deadline }}">
+                                    <button class="secondary-btn" type="submit">Save changes</button>
+                                </form>
+                            </details>
+                            <form method="POST" action="{{ url_for('delete_goal', goal_id=goal.id) }}" data-confirm="Delete this goal?">
+                                <button class="secondary-btn danger" type="submit">Delete</button>
+                            </form>
+                        </div>
+                    </article>
+                {% else %}
+                    <p class="empty-state work-empty">No goals yet. Add your first one to get started.</p>
+                {% endfor %}
+                {% if goals %}
+                    <p class="empty-state work-empty work-no-matches" data-no-matches hidden>No goals match those filters.</p>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

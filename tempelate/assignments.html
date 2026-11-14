@@ -1,0 +1,13 @@
+{% extends "app_layout.html" %}
+{% block title %}Assignments | Catalyst{% endblock %}
+{% block description %}Track assignment deadlines and priorities in Catalyst.{% endblock %}
+{% block page %}
+    {% set heading = "Assignments" %}
+    {% set intro = "Never miss a submission date." %}
+    {% set noun = "assignment" %}
+    {% set noun_plural = "assignments" %}
+    {% set ph_title = "e.g. Lab report 2" %}
+    {% set items = assignments %}
+    {% set add_ep = "add_assignment" %}{% set complete_ep = "complete_assignment" %}{% set edit_ep = "edit_assignment" %}{% set delete_ep = "delete_assignment" %}{% set id_key = "assignment_id" %}
+    {% include "_work_page.html" %}
+{% endblock %}

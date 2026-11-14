@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Catalyst | Login{% endblock %}
+
+{% block content %}
+<main class="login-page">
+    <section class="login-card">
+        <p class="tagline">WELCOME BACK</p>
+        <h1>Login to Catalyst</h1>
+
+        <form method="POST" action="{{ url_for('login') }}">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" autocomplete="email" required>
+
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" autocomplete="current-password" required>
+
+            <button type="submit" class="primary-btn">Login</button>
+            
+        </form>
+        
+        <p class="login-signup">Don't have an account?
+            <a href="{{ url_for('register') }}">Register here</a>
+        </p>
+    </section>
+</main>
+{% endblock %}

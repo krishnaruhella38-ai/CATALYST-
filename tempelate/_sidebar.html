@@ -1,0 +1,19 @@
+{% set ep = request.endpoint %}
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-top">
+        <a href="{{ url_for('home') }}" class="logo" aria-label="Catalyst home">CATALYST<span>.</span></a>
+        <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="sidebar-nav">Menu</button>
+    </div>
+
+    <nav id="sidebar-nav" aria-label="Workspace">
+        <a href="{{ url_for('home') }}">Home</a>
+        <a href="{{ url_for('dashboard') }}" class="{{ 'active' if ep == 'dashboard' }}">Overview</a>
+        <a href="{{ url_for('tasks_page') }}" class="{{ 'active' if ep == 'tasks_page' }}">Tasks <span class="nav-count">{{ tasks|length if tasks is defined else '' }}</span></a>
+        <a href="{{ url_for('assignments_page') }}" class="{{ 'active' if ep == 'assignments_page' }}">Assignments <span class="nav-count">{{ assignments|length if assignments is defined else '' }}</span></a>
+        <a href="{{ url_for('goals_page') }}" class="{{ 'active' if ep == 'goals_page' }}">Goals <span class="nav-count">{{ goals|length if goals is defined else '' }}</span></a>
+        <a href="{{ url_for('feedback') }}" class="{{ 'active' if ep == 'feedback' }}">Feedback</a>
+        <a href="{{ url_for('logout') }}">Log out</a>
+    </nav>
+
+    <div class="sidebar-spacer">Student Workspace · v1.0</div>
+</aside>

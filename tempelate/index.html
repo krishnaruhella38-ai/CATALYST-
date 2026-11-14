@@ -1,0 +1,42 @@
+
+{% extends "base.html" %}
+
+{% block title %}Catalyst | Home{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <nav class="navbar">
+        <a href="{{ url_for('home') }}" class="logo" aria-label="Catalyst home">CATALYST<span>.</span></a>
+
+        <div class="navbar-actions" aria-label="Account and dashboard">
+            <a href="{{ url_for('dashboard') }}" class="nav-action nav-action-dashboard">Dashboard</a>
+            <a href="{{ url_for('login') }}" class="nav-action nav-action-login">Login</a>
+            <a href="{{ url_for('register') }}" class="nav-action nav-action-register">Register</a>
+        </div>
+    </nav>
+
+    <div class="hero-content">
+
+        <p class="tagline hero-enter hero-enter-1">YOUR STUDENT PRODUCTIVITY SPACE</p>
+
+        <h1 class="hero-enter hero-enter-2">
+            Plan Better.<br>
+            <span>Track Progress.</span><br>
+            Achieve More.
+        </h1>
+
+        <p class="hero-description hero-enter hero-enter-3">
+            Organize your academic life, manage assignments,
+            track your goals and stay productive with Catalyst.
+        </p>
+
+        <div class="hero-actions hero-enter hero-enter-4">
+            <a href="{{ url_for('dashboard') }}" class="primary-btn">Explore Dashboard <span aria-hidden="true">→</span></a>
+            <a href="{{ url_for('register') }}" class="secondary-btn hero-secondary-btn">Create Account</a>
+        </div>
+
+    </div>
+
+</section>
+
+{% endblock %}
